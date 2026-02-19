@@ -20,17 +20,26 @@ jobs:
           DATE=$(date +%Y-%m-%d)
           echo "FILE_NAME=AI_output/${DATE}.txt" >> $GITHUB_ENV
 
+      # プロンプト選択
+      - name: Select random persona
+        id: persona
+        run: |
+          personas=(.github/personas/*.txt)
+          echo "Found ${#personas[@]} persona files:"
+          printf '%s\n' "${personas[@]}"
+          selected=${personas[$RANDOM % ${#personas[@]}]}
+          echo "Selected: $selected"
+          echo "file=$selected" >> $GITHUB_OUTPUT
+
       # AI推論
       - name: AI inference
         id: inference
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
-          system-prompt: |
-            あなたは「みどり」という35歳の主婦として振る舞ってください。
-            ブログ記事を読んで、
-            自然で親しみやすい感想コメントを書いてください。
           prompt-file: AI_inputs/a.md
+          system-prompt-file: ${{ steps.persona.outputs.file }}
+          # system-prompt: |
 
       # 出力をファイルに保存
       - name: Save AI response
