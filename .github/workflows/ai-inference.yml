@@ -14,11 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 実行日付＋元ファイル名
-      - name: Set date filename
+      # 最新のAI_inputs内ファイルを取得
+      - name: Get latest input file
         run: |
+          INPUT_FILE=$(ls -t AI_inputs/*.md | head -n 1)
+          if [ -z "$INPUT_FILE" ]; then
+            echo "AI_inputsにファイルがありません"
+            exit 1
+          fi
+          echo "INPUT_FILE=$INPUT_FILE" >> $GITHUB_ENV
+
           DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
-          ORIGINAL_NAME=$(basename AI_inputs/a.md .md)
+          ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)
           echo "FILE_NAME=AI_output/${DATE}_${ORIGINAL_NAME}.txt" >> $GITHUB_ENV
 
       # プロンプト選択
@@ -36,7 +43,7 @@ jobs:
         with:
           model: gpt-4o-mini
           max-tokens: 2500
-          prompt-file: AI_inputs/a.md
+          prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.persona.outputs.file }}
 
       # 保存
