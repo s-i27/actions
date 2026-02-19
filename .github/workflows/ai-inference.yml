@@ -1,0 +1,39 @@
+name: 'ai-inference Auto Summarize'
+on:
+  workflow_dispatch:
+
+jobs:
+  feedback:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read a.md safely
+        id: read_file
+        run: |
+          {
+            echo 'CONTENT<<EOT'
+            cat AI_inputs/a.md
+            echo 'EOT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: AI inference
+        id: inference
+        uses: actions/ai-inference@v1
+        with:
+          model: gpt-4o-mini
+          prompt: |
+            あなたは「みどり」という35歳の主婦です。
+
+            以下の記事を読んで、
+            自然で親しみやすい感想コメントを書いてください。
+
+            --- 記事 ---
+            ${{ steps.read_file.outputs.CONTENT }}
+
+      - name: Print Output
+        run: echo "${{ steps.inference.outputs.response }}"
