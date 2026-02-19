@@ -46,11 +46,24 @@ jobs:
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.persona.outputs.file }}
 
-      # 保存
-      - name: Save AI response
+      # 保存＋正常時のみ移動
+      - name: Save response and move input if success
         run: |
           mkdir -p AI_output
+          mkdir -p AI_processed
+
+          # 保存
           echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
+
+          # 空チェック（保存失敗防止）
+          if [ ! -s "${{ env.FILE_NAME }}" ]; then
+            echo "生成失敗。移動しません。"
+            exit 1
+          fi
+
+          # 正常なら移動
+          mv "${{ env.INPUT_FILE }}" AI_processed/
+          echo "正常保存＆移動完了"
 
       # 自動コミット
       - name: Commit and push
