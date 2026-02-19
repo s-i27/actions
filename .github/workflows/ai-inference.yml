@@ -14,10 +14,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 実行日付ファイル名を作成
+      # 実行日付ファイル名を作成（例: 2026-0220-2134.txt）
       - name: Set date filename
         run: |
-          DATE=$(date +%Y-%m-%d)
+          DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
           echo "FILE_NAME=AI_output/${DATE}.txt" >> $GITHUB_ENV
 
       # プロンプト選択
