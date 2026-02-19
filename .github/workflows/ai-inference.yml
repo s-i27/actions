@@ -14,21 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 実行日付ファイル名を作成（例: 2026-0220-2134.txt）
+      # 実行日付ファイル名
       - name: Set date filename
         run: |
           DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
           echo "FILE_NAME=AI_output/${DATE}.txt" >> $GITHUB_ENV
 
-      # プロンプト選択
+      # Persona選択
       - name: Select random persona
         id: persona
         run: |
           personas=(.github/personas/*.txt)
-          echo "Found ${#personas[@]} persona files:"
-          printf '%s\n' "${personas[@]}"
           selected=${personas[$RANDOM % ${#personas[@]}]}
-          echo "Selected: $selected"
           echo "file=$selected" >> $GITHUB_OUTPUT
 
       # AI推論
@@ -40,16 +37,24 @@ jobs:
           max-tokens: 2500
           prompt-file: AI_inputs/a.md
           system-prompt-file: ${{ steps.persona.outputs.file }}
-          # system-prompt: |
 
-      # 出力をファイルに保存
+      # 保存（FILE_NAMEに修正）
       - name: Save AI response
         run: |
+          mkdir -p AI_output
           echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
+
+      # 空ファイル防止
+      - name: Validate file
+        run: |
+          if [ ! -s "${{ env.FILE_NAME }}" ]; then
+            echo "生成失敗"
+            exit 1
+          fi
 
       # 自動コミット
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Add AI summary ${{ github.run_id }}
-          file_pattern: AI_output/*.md
+          file_pattern: AI_output/*.txt
