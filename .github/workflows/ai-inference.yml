@@ -37,7 +37,7 @@ jobs:
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
-          max-tokens: 2000
+          max-tokens: 2500
           prompt-file: AI_inputs/a.md
           system-prompt-file: ${{ steps.persona.outputs.file }}
           # system-prompt: |
