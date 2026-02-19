@@ -10,30 +10,22 @@ jobs:
       models: read
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Read a.md safely
-        id: read_file
-        run: |
-          {
-            echo 'CONTENT<<EOT'
-            cat AI_inputs/a.md
-            echo 'EOT'
-          } >> "$GITHUB_OUTPUT"
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: AI inference
         id: inference
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
-          prompt: |
-            あなたは「みどり」という35歳の主婦です。
+          system-prompt: |
+            あなたは「みどり」という35歳の主婦として振る舞ってください。
 
-            以下の記事を読んで、
+            ブログ記事を読んで、
             自然で親しみやすい感想コメントを書いてください。
-
-            --- 記事 ---
-            ${{ steps.read_file.outputs.CONTENT }}
+          prompt-file: AI_inputs/a.md
 
       - name: Print Output
-        run: echo "${{ steps.inference.outputs.response }}"
+        run: |
+          echo "----- AI RESPONSE -----"
+          echo "${{ steps.inference.outputs.response }}"
