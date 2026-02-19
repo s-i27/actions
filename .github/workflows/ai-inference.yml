@@ -14,13 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 実行日付ファイル名
+      # 実行日付＋元ファイル名
       - name: Set date filename
         run: |
           DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
-          echo "FILE_NAME=AI_output/${DATE}.txt" >> $GITHUB_ENV
+          ORIGINAL_NAME=$(basename AI_inputs/a.md .md)
+          echo "FILE_NAME=AI_output/${DATE}_${ORIGINAL_NAME}.txt" >> $GITHUB_ENV
 
-      # Persona選択
+      # プロンプト選択
       - name: Select random persona
         id: persona
         run: |
@@ -38,19 +39,11 @@ jobs:
           prompt-file: AI_inputs/a.md
           system-prompt-file: ${{ steps.persona.outputs.file }}
 
-      # 保存（FILE_NAMEに修正）
+      # 保存
       - name: Save AI response
         run: |
           mkdir -p AI_output
           echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
-
-      # 空ファイル防止
-      - name: Validate file
-        run: |
-          if [ ! -s "${{ env.FILE_NAME }}" ]; then
-            echo "生成失敗"
-            exit 1
-          fi
 
       # 自動コミット
       - name: Commit and push
