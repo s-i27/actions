@@ -1,18 +1,26 @@
 name: 'ai-inference Auto Summarize'
+
 on:
   workflow_dispatch:
 
 jobs:
-  feedback:
+  summarize:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       models: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 実行日付ファイル名を作成
+      - name: Set date filename
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          echo "FILE_NAME=AI_output/${DATE}.txt" >> $GITHUB_ENV
+
+      # AI推論
       - name: AI inference
         id: inference
         uses: actions/ai-inference@v1
@@ -20,12 +28,18 @@ jobs:
           model: gpt-4o-mini
           system-prompt: |
             あなたは「みどり」という35歳の主婦として振る舞ってください。
-
             ブログ記事を読んで、
             自然で親しみやすい感想コメントを書いてください。
           prompt-file: AI_inputs/a.md
 
-      - name: Print Output
+      # 出力をファイルに保存
+      - name: Save AI response
         run: |
-          echo "----- AI RESPONSE -----"
-          echo "${{ steps.inference.outputs.response }}"
+          echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
+
+      # 自動コミット
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Add AI summary ${{ github.run_id }}
+          file_pattern: AI_output/*.txt
