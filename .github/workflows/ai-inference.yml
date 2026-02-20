@@ -1,8 +1,8 @@
 name: 'ai-inference Auto Summarize'
 
 on:
-  workflow_dispatch:
-  push:
+  workflow_dispatch:       # 手動起動用
+  push:                   # ファイル追加・更新で自動起動
     paths:
       - 'AI_inputs/*.md'
 
@@ -14,7 +14,8 @@ jobs:
       models: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       # 最新のAI_inputs内ファイルを取得
       - name: Get latest input file
@@ -27,26 +28,22 @@ jobs:
           echo "INPUT_FILE=$INPUT_FILE" >> $GITHUB_ENV
 
           DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
-          BASE_NAME=$(basename "$INPUT_FILE" .md)
-          echo "DATE=$DATE" >> $GITHUB_ENV
-          echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
 
-          # 共通単語リストファイル（MAINファイル）
-          echo "VOCAB_FILE=2.単語_AWS_ジャンル/AWS_ALL.md" >> $GITHUB_ENV
+          # 保存先 AI_output フォルダー
+          ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)
+          echo "FILE_NAME=AI_output/${DATE}_${ORIGINAL_NAME}.txt" >> $GITHUB_ENV
 
-          # 要約ファイル
-          echo "SUMMARY_FILE=AI_output/${DATE}_${BASE_NAME}.txt" >> $GITHUB_ENV
+          # 保存先 2.単語_AWS_ジャンル フォルダー（単語リスト用）
+          ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)_単語
+          echo "FILE_NAME2=2.単語_AWS_ジャンル/AWS_ALL.md" >> $GITHUB_ENV
 
-      - name: Prepare directories
-        run: |
-          mkdir -p AI_output
-          mkdir -p 2.単語_AWS_ジャンル
-          mkdir -p AI_archived
-
+      # 単語リスト生成用プロンプト
       - name: Select vocab prompt
         id: vocab_prompt
-        run: echo "file=.github/personas/generate_vocab.txt" >> $GITHUB_OUTPUT
+        run: |
+          echo "file=.github/personas/generate_vocab.txt" >> $GITHUB_OUTPUT
 
+      # 単語リスト生成用 AI推論
       - name: AI inference - vocab
         id: inference_vocab
         uses: actions/ai-inference@v1
@@ -56,10 +53,13 @@ jobs:
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.vocab_prompt.outputs.file }}
 
+      # 要約用プロンプト
       - name: Select summarize prompt
         id: summarize_prompt
-        run: echo "file=.github/personas/summarize.txt" >> $GITHUB_OUTPUT
+        run: |
+          echo "file=.github/personas/summarize.txt" >> $GITHUB_OUTPUT
 
+      # 要約用 AI推論
       - name: AI inference - summarize
         id: inference_summarize
         uses: actions/ai-inference@v1
@@ -69,15 +69,18 @@ jobs:
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.summarize_prompt.outputs.file }}
 
+      # 保存＋正常時のみ移動
       - name: Save responses and move input if success
         run: |
-          # 要約ファイルを作成
-          printf "%s\n" "${{ steps.inference_summarize.outputs.response }}" > "${{ env.SUMMARY_FILE }}"
+          mkdir -p AI_output
+          mkdir -p 2.単語_AWS_ジャンル
+          mkdir -p AI_archived
 
-          # 単語リストは共通MAINファイルに追記
-          printf "\n%s\n" "${{ steps.inference_vocab.outputs.response }}" >> "${{ env.VOCAB_FILE }}"
+          # 要約と単語リストを安全に保存
+          printf "%s\n" "${{ steps.inference_summarize.outputs.response }}" > "${{ env.FILE_NAME }}"
+          printf "%s\n" "${{ steps.inference_vocab.outputs.response }}" > "${{ env.FILE_NAME2 }}"
 
-          if [ ! -s "${{ env.SUMMARY_FILE }}" ]; then
+          if [ ! -s "${{ env.FILE_NAME }}" ]; then
             echo "生成失敗。移動しません。"
             exit 1
           fi
@@ -86,6 +89,7 @@ jobs:
           mv "$INPUT_FILE" AI_archived/
           echo "正常保存＆移動完了"
 
+      # 自動コミット
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
