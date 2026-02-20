@@ -62,4 +62,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Add AI summary ${{ github.run_id }}
-          file_pattern: AI_output/*.txt
+          file_pattern: |
+            AI_output/*.txt
+            AI_inputs/*.md
