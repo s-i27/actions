@@ -39,7 +39,7 @@ jobs:
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
-          max-tokens: 2500
+          max-tokens: 3000
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.summarize_prompt.outputs.file }}
 
