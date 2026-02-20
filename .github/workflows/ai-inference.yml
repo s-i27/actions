@@ -1,8 +1,8 @@
 name: 'ai-inference Auto Summarize'
 
 on:
-  workflow_dispatch: # 手動起動用
-  push: # ファイル追加・更新で自動起動
+  workflow_dispatch:
+  push:
     paths:
       - 'AI_inputs/*.md'
 
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4 # 最新のAI_inputs内ファイルを取得
+        uses: actions/checkout@v4
 
       - name: Get latest input file
         run: |
@@ -48,17 +48,19 @@ jobs:
           set -e
           mkdir -p AI_output
           mkdir -p AI_archived
-          
-          # 要約を保存
-          echo "${{ steps.inference_summarize.outputs.response }}" > "${{ env.FILE_NAME }}"
-          
+
+          # ヒアドキュメントで安全にMarkdownを保存
+          cat <<'EOF' > "${FILE_NAME}"
+          ${{ steps.inference_summarize.outputs.response }}
+          EOF
+
           # 正常性チェック
-          if [ ! -s "${{ env.FILE_NAME }}" ]; then
+          if [ ! -s "${FILE_NAME}" ]; then
             echo "生成失敗。移動しません。"
             exit 1
           fi
-          
-          # 元ファイルをアーカイブに移動（スペース対応）
+
+          # 元ファイルをアーカイブに移動（スペース入り対応）
           if [ -f "${INPUT_FILE}" ]; then
             mv "${INPUT_FILE}" AI_archived/
             echo "元ファイルを AI_archived に移動しました: ${INPUT_FILE}"
@@ -66,6 +68,12 @@ jobs:
             echo "移動対象のファイルが存在しません: ${INPUT_FILE}"
             exit 1
           fi
+
+          # 確認用
+          echo "AI_archived の内容:"
+          ls -l AI_archived/
+          echo "AI_inputs の内容:"
+          ls -l AI_inputs/
 
           echo "正常保存＆移動完了"
 
