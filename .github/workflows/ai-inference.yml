@@ -46,26 +46,28 @@ jobs:
       - name: Save response and move input if success
         run: |
           set -e
-          mkdir -p AI_output
-          mkdir -p AI_archived
+          mkdir -p AI_output AI_archived
 
-          # ヒアドキュメントで安全にMarkdownを保存
-          cat <<'EOF' > "${FILE_NAME}"
-          ${{ steps.inference_summarize.outputs.response }}
-          EOF
+          # GitHub Actions 変数をシェル変数にコピー
+          RESPONSE="${{ steps.inference_summarize.outputs.response }}"
+
+          # ヒアドキュメントでMarkdownを安全に保存（インデントなし）
+          cat <<EOF > "$FILE_NAME"
+$RESPONSE
+EOF
 
           # 正常性チェック
-          if [ ! -s "${FILE_NAME}" ]; then
+          if [ ! -s "$FILE_NAME" ]; then
             echo "生成失敗。移動しません。"
             exit 1
           fi
 
-          # 元ファイルをアーカイブに移動（スペース入り対応）
-          if [ -f "${INPUT_FILE}" ]; then
-            mv "${INPUT_FILE}" AI_archived/
-            echo "元ファイルを AI_archived に移動しました: ${INPUT_FILE}"
+          # 元ファイルをアーカイブに移動（スペース対応）
+          if [ -f "$INPUT_FILE" ]; then
+            mv "$INPUT_FILE" AI_archived/
+            echo "元ファイルを AI_archived に移動しました: $INPUT_FILE"
           else
-            echo "移動対象のファイルが存在しません: ${INPUT_FILE}"
+            echo "移動対象のファイルが存在しません: $INPUT_FILE"
             exit 1
           fi
 
@@ -77,8 +79,8 @@ jobs:
 
           echo "正常保存＆移動完了"
 
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Add AI summary ${{ github.run_id }}
-          file_pattern: AI_output/*.txt
+        - name: Commit and push
+          uses: stefanzweifel/git-auto-commit-action@v5
+          with:
+            commit_message: Add AI summary ${{ github.run_id }}
+            file_pattern: AI_output/*.txt
