@@ -69,7 +69,7 @@ jobs:
           mkdir -p AI_output
           mkdir -p AI_archived
 
-          echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
+          echo "${{ steps.inference_summarize.outputs.response }}" > "${{ env.FILE_NAME }}"
 
           if [ ! -s "${{ env.FILE_NAME }}" ]; then
             echo "生成失敗。移動しません。"
@@ -84,4 +84,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Add AI summary ${{ github.run_id }}
-          file_pattern: AI_output/*.txt
+          file_pattern: |
+            AI_output/*.txt
+            2.単語_AWS_ジャンル/*.md
