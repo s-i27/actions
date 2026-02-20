@@ -31,23 +31,37 @@ jobs:
           ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)
           echo "FILE_NAME=AI_output/${DATE}_${ORIGINAL_NAME}.txt" >> $GITHUB_ENV
 
-      # プロンプト選択
-      - name: Select random persona
-        id: persona
+      # 単語リスト生成用プロンプト
+      - name: Select vocab prompt
+        id: vocab_prompt
         run: |
-          personas=(.github/personas/*.txt)
-          selected=${personas[$RANDOM % ${#personas[@]}]}
-          echo "file=$selected" >> $GITHUB_OUTPUT
+          echo "file=.github/personas/generate_vocab.txt" >> $GITHUB_OUTPUT
 
-      # AI推論
-      - name: AI inference
-        id: inference
+      # 単語リスト生成用 AI推論
+      - name: AI inference - vocab
+        id: inference_vocab
+        uses: actions/ai-inference@v1
+        with:
+          model: gpt-4o-mini
+          max-tokens: 500
+          prompt-file: ${{ env.INPUT_FILE }}
+          system-prompt-file: ${{ steps.vocab_prompt.outputs.file }}
+
+      # 要約用プロンプト
+      - name: Select summarize prompt
+        id: summarize_prompt
+        run: |
+          echo "file=.github/personas/summarize.txt" >> $GITHUB_OUTPUT
+
+      # 要約用 AI推論
+      - name: AI inference - summarize
+        id: inference_summarize
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
           max-tokens: 2500
           prompt-file: ${{ env.INPUT_FILE }}
-          system-prompt-file: ${{ steps.persona.outputs.file }}
+          system-prompt-file: ${{ steps.summarize_prompt.outputs.file }}
 
       # 保存＋正常時のみ移動
       - name: Save response and move input if success
