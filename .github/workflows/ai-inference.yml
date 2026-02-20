@@ -43,14 +43,20 @@ jobs:
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.summarize_prompt.outputs.file }}
 
-      # - name: Delete original input file
-      #   run: |
-      #     if [ -f "$INPUT_FILE" ]; then
-      #       rm "$INPUT_FILE"
-      #       echo "元ファイルを削除しました: $INPUT_FILE"
-      #     else
-      #       echo "削除対象のファイルが存在しません: $INPUT_FILE"
-      #     fi
+      - name: Save AI response to file
+        run: |
+          mkdir -p AI_output
+          echo "${{ steps.inference_summarize.outputs.response }}" > "${FILE_NAME}"
+          echo "生成完了: ${FILE_NAME}"
+
+      - name: Delete original input file
+        run: |
+          if [ -f "$INPUT_FILE" ]; then
+            rm "$INPUT_FILE"
+            echo "元ファイルを削除しました: $INPUT_FILE"
+          else
+            echo "削除対象のファイルが存在しません: $INPUT_FILE"
+          fi
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
