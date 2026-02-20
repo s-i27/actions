@@ -28,8 +28,14 @@ jobs:
           echo "INPUT_FILE=$INPUT_FILE" >> $GITHUB_ENV
 
           DATE=$(TZ=Asia/Tokyo date +"%Y-%m%d-%H%M")
+
+          # 保存先 AI_output フォルダー
           ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)
           echo "FILE_NAME=AI_output/${DATE}_${ORIGINAL_NAME}.txt" >> $GITHUB_ENV
+
+          # 保存先 2.単語_AWS_ジャンル フォルダー
+          ORIGINAL_NAME=$(basename "$INPUT_FILE" .md)_単語
+          echo "FILE_NAME2=2.単語_AWS_ジャンル/${DATE}_${ORIGINAL_NAME}.md" >> $GITHUB_ENV
 
       # 単語リスト生成用プロンプト
       - name: Select vocab prompt
@@ -43,7 +49,7 @@ jobs:
         uses: actions/ai-inference@v1
         with:
           model: gpt-4o-mini
-          max-tokens: 500
+          max-tokens: 2000
           prompt-file: ${{ env.INPUT_FILE }}
           system-prompt-file: ${{ steps.vocab_prompt.outputs.file }}
 
@@ -70,6 +76,7 @@ jobs:
           mkdir -p AI_archived
 
           echo "${{ steps.inference_summarize.outputs.response }}" > "${{ env.FILE_NAME }}"
+          echo "${{ steps.inference_vocab.outputs.response }}" > "${{ env.FILE_NAME2 }}"
 
           if [ ! -s "${{ env.FILE_NAME }}" ]; then
             echo "生成失敗。移動しません。"
