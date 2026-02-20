@@ -1,7 +1,10 @@
 name: 'ai-inference Auto Summarize'
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:       # 手動起動用
+  push:                   # ファイル追加・更新で自動起動
+    paths:
+      - 'AI_inputs/*.md'
 
 jobs:
   summarize:
@@ -50,19 +53,16 @@ jobs:
       - name: Save response and move input if success
         run: |
           mkdir -p AI_output
-          mkdir -p AI_processed
+          mkdir -p AI_archived
 
-          # 保存
           echo "${{ steps.inference.outputs.response }}" > "${{ env.FILE_NAME }}"
 
-          # 空チェック（保存失敗防止）
           if [ ! -s "${{ env.FILE_NAME }}" ]; then
             echo "生成失敗。移動しません。"
             exit 1
           fi
 
-          # 正常なら移動
-          mv "${{ env.INPUT_FILE }}" AI_processed/
+          mv "${{ env.INPUT_FILE }}" AI_archived/
           echo "正常保存＆移動完了"
 
       # 自動コミット
